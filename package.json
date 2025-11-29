@@ -1,0 +1,32 @@
+{
+  "name": "bailway-project",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "tsc && node dist/server.js",
+    "dev": "nodemon --watch src -e ts --exec \"npx tsc && node dist/server.js\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.1",
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
+    "axios": "^1.13.2",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "nodemon": "^3.1.11",
+    "pino": "^10.1.0",
+    "qrcode-terminal": "^0.12.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/qrcode-terminal": "^0.12.2"
+  }
+}
