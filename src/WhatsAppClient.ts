@@ -13,17 +13,20 @@ export class WhatsAppClient {
   private sessionId: string;
   private qrCallback?: (qr: string) => void;
   private statusCallback?: (status: string) => void;
+  private messageCallback?: (msg: any) => void;
 
   constructor(
     sessionId: string,
     sessionManager: SessionManager,
     qrCallback?: (qr: string) => void,
-    statusCallback?: (status: string) => void
+    statusCallback?: (status: string) => void,
+    messageCallback?: (msg: any) => void
   ) {
     this.sessionId = sessionId;
     this.sessionManager = sessionManager;
     this.qrCallback = qrCallback;
     this.statusCallback = statusCallback;
+    this.messageCallback = messageCallback;
   }
 
   async initialize() {
@@ -38,6 +41,16 @@ export class WhatsAppClient {
     });
 
     this.socket.ev.on("creds.update", saveCreds);
+
+    this.socket.ev.on("messages.upsert", async (m) => {
+      if (m.type === "notify" && this.messageCallback) {
+        for (const msg of m.messages) {
+          if (!msg.key.fromMe) {
+            this.messageCallback(msg);
+          }
+        }
+      }
+    });
 
     this.socket.ev.on(
       "connection.update",

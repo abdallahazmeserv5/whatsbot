@@ -1,24 +1,45 @@
 import express from "express";
-import { WhatsAppManager } from "./WhatsAppManager";
-import qrcode from "qrcode-terminal";
 import cors from "cors";
+import { WhatsAppManager } from "./WhatsAppManager";
+import { AppDataSource } from "./data-source";
+import { startFlowWorker } from "./queues/flowQueue";
+import { Flow } from "./entities/Flow";
+import { FlowExecution } from "./entities/FlowExecution";
+import qrcode from "qrcode-terminal";
+import "reflect-metadata";
 
 const app = express();
-app.use(express.json());
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"],
-  })
-);
+const PORT = process.env.PORT || 3000;
 
-// Initialize the WhatsApp Manager
-const manager = new WhatsAppManager();
+app.use(cors());
+app.use(express.json());
 
 // In-memory storage
 const qrCodes = new Map<string, string>();
 const sessionStatuses = new Map<string, string>();
+
+// Initialize Database
+AppDataSource.initialize()
+  .then(() => {
+    console.log("Database initialized successfully");
+
+    // Initialize BullMQ Worker
+    const manager = new WhatsAppManager();
+    const flowExecutor = manager["flowExecutor"];
+
+    if (flowExecutor) {
+      startFlowWorker(async (executionId: string, nodeId: string) => {
+        await flowExecutor.executeNode(executionId, nodeId);
+      });
+      console.log("BullMQ worker started successfully");
+    }
+  })
+  .catch((error) => {
+    console.error("Error initializing database:", error);
+  });
+
+// Initialize the WhatsApp Manager
+const manager = new WhatsAppManager();
 
 app.post("/session/start", async (req, res) => {
   const { sessionId } = req.body;
@@ -150,7 +171,74 @@ app.post("/message/send-all", async (req, res) => {
   }
 });
 
-const PORT = 3000;
+// Flow Management Endpoints
+app.post("/flows", async (req, res) => {
+  try {
+    const { name, nodes, edges, triggerType, keywords, isActive } = req.body;
+    const flowRepo = AppDataSource.getRepository(Flow);
+
+    const flow = flowRepo.create({
+      name,
+      nodes,
+      edges,
+      triggerType,
+      keywords,
+      isActive: isActive !== undefined ? isActive : true,
+    });
+
+    await flowRepo.save(flow);
+    res.json({ success: true, flow });
+  } catch (error: any) {
+    console.error("Error saving flow:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/flows", async (req, res) => {
+  try {
+    const flows = await AppDataSource.getRepository(Flow).find({
+      order: { createdAt: "DESC" },
+    });
+    res.json(flows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.patch("/flows/:id/toggle", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const flowRepo = AppDataSource.getRepository(Flow);
+
+    const flow = await flowRepo.findOne({ where: { id } });
+    if (!flow) {
+      return res.status(404).json({ error: "Flow not found" });
+    }
+
+    flow.isActive = !flow.isActive;
+    await flowRepo.save(flow);
+
+    res.json({ success: true, flow });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/flows/:id/executions", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const executions = await AppDataSource.getRepository(FlowExecution).find({
+      where: { flow: { id } },
+      relations: ["contact"],
+      order: { startedAt: "DESC" },
+      take: 50,
+    });
+    res.json(executions);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

@@ -1,12 +1,15 @@
 import { WhatsAppClient } from "./WhatsAppClient";
 import { SessionManager } from "./SessionManager";
+import { FlowExecutor } from "./services/FlowExecutor";
 
 export class WhatsAppManager {
   private clients: Map<string, WhatsAppClient> = new Map();
   private sessionManager: SessionManager;
+  private flowExecutor: FlowExecutor;
 
   constructor() {
     this.sessionManager = new SessionManager();
+    this.flowExecutor = new FlowExecutor(this);
   }
 
   async startSession(
@@ -23,7 +26,17 @@ export class WhatsAppManager {
       sessionId,
       this.sessionManager,
       qrCallback,
-      statusCallback
+      statusCallback,
+      (msg) => {
+        // Handle incoming message
+        const from = msg.key.remoteJid;
+        const text =
+          msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+
+        if (from && text) {
+          this.flowExecutor.handleIncomingMessage(sessionId, from, text);
+        }
+      }
     );
     await client.initialize();
     this.clients.set(sessionId, client);

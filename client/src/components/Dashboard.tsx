@@ -6,17 +6,8 @@ interface Session {
   status: string;
 }
 
-interface DashboardProps {
-  sessions: Session[];
-  onAddSession: () => void;
-  onRefreshSessions: () => void;
-}
-
-export const Dashboard: React.FC<DashboardProps> = ({
-  sessions,
-  onAddSession,
-  onRefreshSessions,
-}) => {
+export const Dashboard: React.FC = () => {
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState("");
   const [to, setTo] = useState("");
   const [message, setMessage] = useState("");
@@ -38,6 +29,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
       sessionId?: string;
     }[];
   } | null>(null);
+
+  // Fetch sessions on mount
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const response = await axios.get("http://localhost:3000/sessions");
+      setSessions(response.data.sessions || []);
+    } catch (err) {
+      console.error("Failed to fetch sessions:", err);
+    }
+  };
+
+  const addSession = async () => {
+    const sessionId = prompt("Enter a session ID (e.g., 'session1'):");
+    if (!sessionId) return;
+
+    try {
+      await axios.post("http://localhost:3000/session/start", { sessionId });
+      setStatus({
+        type: "success",
+        text: `Session ${sessionId} started. Check console for QR code or use the QR endpoint.`,
+      });
+      setTimeout(() => fetchSessions(), 1000);
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to start session";
+      setStatus({ type: "error", text: errorMessage });
+    }
+  };
 
   // Auto-select first connected session
   useEffect(() => {
@@ -167,13 +190,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className="flex gap-3">
               <button
-                onClick={onRefreshSessions}
+                onClick={fetchSessions}
                 className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 🔄 Refresh
               </button>
               <button
-                onClick={onAddSession}
+                onClick={addSession}
                 className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 ➕ Add Session
@@ -234,7 +257,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           await axios.delete(
                             `http://localhost:3000/session/${session.sessionId}`
                           );
-                          onRefreshSessions();
+                          fetchSessions();
                           setStatus({
                             type: "success",
                             text: `Session ${session.sessionId} deleted successfully`,
