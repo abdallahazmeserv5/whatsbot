@@ -75,4 +75,11 @@ export class WhatsAppClient {
     const jid = to.includes("@s.whatsapp.net") ? to : `${to}@s.whatsapp.net`;
     await this.socket.sendMessage(jid, { text });
   }
+
+  async destroy() {
+    if (this.socket) {
+      await this.socket.logout();
+      this.socket = null;
+    }
+  }
 }

@@ -37,6 +37,24 @@ export class WhatsAppManager {
     await client.sendMessage(to, text);
   }
 
+  async deleteSession(sessionId: string) {
+    const client = this.clients.get(sessionId);
+    if (!client) {
+      throw new Error(`Session ${sessionId} not found`);
+    }
+
+    // Close the connection
+    await client.destroy();
+
+    // Remove from clients map
+    this.clients.delete(sessionId);
+
+    // Delete session files
+    await this.sessionManager.deleteSession(sessionId);
+
+    console.log(`Session ${sessionId} deleted successfully`);
+  }
+
   async sendBulkMessage(
     sessionId: string,
     recipients: string[],

@@ -202,8 +202,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       : "border-gray-300 bg-gray-50"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex-1">
                       <p className="font-medium text-gray-900">
                         {session.sessionId}
                       </p>
@@ -223,6 +223,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <span className="text-2xl">📱</span>
                     )}
                   </div>
+                  <button
+                    onClick={async () => {
+                      if (
+                        window.confirm(
+                          `Are you sure you want to delete session "${session.sessionId}"? This will log out the WhatsApp connection and delete all session data.`
+                        )
+                      ) {
+                        try {
+                          await axios.delete(
+                            `http://localhost:3000/session/${session.sessionId}`
+                          );
+                          onRefreshSessions();
+                          setStatus({
+                            type: "success",
+                            text: `Session ${session.sessionId} deleted successfully`,
+                          });
+                        } catch (err: unknown) {
+                          const errorMessage =
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to delete session";
+                          setStatus({ type: "error", text: errorMessage });
+                        }
+                      }
+                    }}
+                    className="w-full mt-2 px-3 py-1.5 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-md transition-colors"
+                  >
+                    🗑️ Delete Session
+                  </button>
                 </div>
               ))}
             </div>

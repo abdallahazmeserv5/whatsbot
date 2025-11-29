@@ -94,6 +94,17 @@ app.post("/message/send", async (req, res) => {
   }
 });
 
+app.delete("/session/:sessionId", async (req, res) => {
+  const { sessionId } = req.params;
+
+  try {
+    await manager.deleteSession(sessionId);
+    res.json({ message: `Session ${sessionId} deleted successfully` });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post("/message/send-bulk", async (req, res) => {
   const { sessionId, recipients, text, delayMs } = req.body;
 
