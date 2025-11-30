@@ -9,6 +9,11 @@ import qrcode from "qrcode-terminal";
 import "reflect-metadata";
 import { BulkMessageService } from "./services/BulkMessageService";
 import { BroadcastService } from "./services/BroadcastService";
+import { SenderManager } from "./services/SenderManager";
+import { CampaignManager } from "./services/CampaignManager";
+import { createSenderRoutes } from "./routes/senderRoutes";
+import { createCampaignRoutes } from "./routes/campaignRoutes";
+import { createMessageWorker } from "./workers/messageWorker";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,35 +26,32 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 const qrCodes = new Map<string, string>();
 const sessionStatuses = new Map<string, string>();
 
-// Initialize Database
-AppDataSource.initialize()
-  .then(() => {
-    console.log("Database initialized successfully");
-
-    // Initialize BullMQ Worker (DISABLED - Redis not required for bulk/broadcast)
-    // Uncomment below if you need flow automation features
-    /*
-    const manager = new WhatsAppManager();
-    const flowExecutor = manager["flowExecutor"];
-
-    if (flowExecutor) {
-      startFlowWorker(async (executionId: string, nodeId: string) => {
-        await flowExecutor.executeNode(executionId, nodeId);
-      });
-      console.log("BullMQ worker started successfully");
-    }
-    */
-  })
-  .catch((error) => {
-    console.error("Error initializing database:", error);
-  });
-
 // Initialize the WhatsApp Manager
 const manager = new WhatsAppManager();
 
 // Initialize services
 const bulkMessageService = new BulkMessageService(manager);
 const broadcastService = new BroadcastService(manager);
+const senderManager = new SenderManager(manager);
+const campaignManager = new CampaignManager();
+
+// Initialize Routes
+app.use("/api/senders", createSenderRoutes(senderManager));
+app.use("/api/campaigns", createCampaignRoutes(campaignManager));
+
+// Initialize Database
+AppDataSource.initialize()
+  .then(async () => {
+    console.log("Database initialized successfully");
+
+    // Initialize Enterprise Features
+    await senderManager.restoreAllSessions();
+    createMessageWorker(senderManager, campaignManager, manager);
+    console.log("✅ Enterprise WhatsApp System Initialized");
+  })
+  .catch((error) => {
+    console.error("Error initializing database:", error);
+  });
 
 app.post("/session/start", async (req, res) => {
   const { sessionId } = req.body;

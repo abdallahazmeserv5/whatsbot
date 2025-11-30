@@ -1,14 +1,21 @@
 import { useState } from "react";
-import "./App.css";
 import { Dashboard } from "./components/Dashboard";
 import FlowBuilder from "./components/FlowBuilder/FlowBuilder";
 import FlowList from "./components/FlowList";
 import BulkMessagePage from "./pages/BulkMessagePage";
 import BroadcastManager from "./pages/BroadcastManager";
+import SenderManager from "./pages/SenderManager";
+import CampaignManager from "./pages/CampaignManager";
 
 function App() {
   const [currentView, setCurrentView] = useState<
-    "dashboard" | "flows" | "builder" | "bulk" | "broadcast"
+    | "dashboard"
+    | "flows"
+    | "builder"
+    | "bulk"
+    | "broadcast"
+    | "senders"
+    | "campaigns"
   >("dashboard");
 
   return (
@@ -99,6 +106,35 @@ function App() {
           >
             Broadcasts
           </button>
+          <button
+            onClick={() => setCurrentView("senders")}
+            style={{
+              padding: "8px 16px",
+              background: currentView === "senders" ? "#007bff" : "transparent",
+              color: "white",
+              border: currentView === "senders" ? "none" : "1px solid white",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            Senders
+          </button>
+          <button
+            onClick={() => setCurrentView("campaigns")}
+            style={{
+              padding: "8px 16px",
+              background:
+                currentView === "campaigns" ? "#007bff" : "transparent",
+              color: "white",
+              border: currentView === "campaigns" ? "none" : "1px solid white",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            Campaigns
+          </button>
         </nav>
       </header>
 
@@ -108,6 +144,8 @@ function App() {
         {currentView === "builder" && <FlowBuilder />}
         {currentView === "bulk" && <BulkMessagePage />}
         {currentView === "broadcast" && <BroadcastManager />}
+        {currentView === "senders" && <SenderManager />}
+        {currentView === "campaigns" && <CampaignManager />}
       </main>
     </div>
   );
