@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { LoginScreen } from "./LoginScreen";
 
 interface Session {
   sessionId: string;
@@ -29,6 +30,7 @@ export const Dashboard: React.FC = () => {
       sessionId?: string;
     }[];
   } | null>(null);
+  const [showLoginScreen, setShowLoginScreen] = useState(false);
 
   // Fetch sessions on mount
   useEffect(() => {
@@ -44,22 +46,17 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const addSession = async () => {
-    const sessionId = prompt("Enter a session ID (e.g., 'session1'):");
-    if (!sessionId) return;
+  const addSession = () => {
+    setShowLoginScreen(true);
+  };
 
-    try {
-      await axios.post("http://localhost:3000/session/start", { sessionId });
-      setStatus({
-        type: "success",
-        text: `Session ${sessionId} started. Check console for QR code or use the QR endpoint.`,
-      });
-      setTimeout(() => fetchSessions(), 1000);
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to start session";
-      setStatus({ type: "error", text: errorMessage });
-    }
+  const handleSessionStart = (sessionId: string) => {
+    setShowLoginScreen(false);
+    setStatus({
+      type: "success",
+      text: `Session ${sessionId} connected successfully!`,
+    });
+    fetchSessions();
   };
 
   // Auto-select first connected session
@@ -466,6 +463,14 @@ export const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* QR Code Login Modal */}
+      {showLoginScreen && (
+        <LoginScreen
+          onSessionStart={handleSessionStart}
+          onCancel={() => setShowLoginScreen(false)}
+        />
+      )}
     </div>
   );
 };

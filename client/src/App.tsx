@@ -3,10 +3,12 @@ import "./App.css";
 import { Dashboard } from "./components/Dashboard";
 import FlowBuilder from "./components/FlowBuilder/FlowBuilder";
 import FlowList from "./components/FlowList";
+import BulkMessagePage from "./pages/BulkMessagePage";
+import BroadcastManager from "./pages/BroadcastManager";
 
 function App() {
   const [currentView, setCurrentView] = useState<
-    "dashboard" | "flows" | "builder"
+    "dashboard" | "flows" | "builder" | "bulk" | "broadcast"
   >("dashboard");
 
   return (
@@ -68,6 +70,35 @@ function App() {
           >
             Flow Builder
           </button>
+          <button
+            onClick={() => setCurrentView("bulk")}
+            style={{
+              padding: "8px 16px",
+              background: currentView === "bulk" ? "#007bff" : "transparent",
+              color: "white",
+              border: currentView === "bulk" ? "none" : "1px solid white",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            Bulk Messages
+          </button>
+          <button
+            onClick={() => setCurrentView("broadcast")}
+            style={{
+              padding: "8px 16px",
+              background:
+                currentView === "broadcast" ? "#007bff" : "transparent",
+              color: "white",
+              border: currentView === "broadcast" ? "none" : "1px solid white",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            Broadcasts
+          </button>
         </nav>
       </header>
 
@@ -75,6 +106,8 @@ function App() {
         {currentView === "dashboard" && <Dashboard />}
         {currentView === "flows" && <FlowList />}
         {currentView === "builder" && <FlowBuilder />}
+        {currentView === "bulk" && <BulkMessagePage />}
+        {currentView === "broadcast" && <BroadcastManager />}
       </main>
     </div>
   );

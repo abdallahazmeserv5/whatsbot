@@ -59,6 +59,11 @@ tmp/
 temp/
 *.tmp
 
+# SQLite database files (migrated to PostgreSQL)
+*.sqlite
+*.sqlite3
+*.db
+
 # Railway deployment
 .railway/
 

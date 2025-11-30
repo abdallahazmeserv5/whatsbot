@@ -23,7 +23,7 @@ export class Contact {
   @Column({ default: false })
   isAutoReplyDisabled!: boolean;
 
-  @Column({ type: "datetime", nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   autoReplyDisabledUntil!: Date;
 
   @CreateDateColumn()

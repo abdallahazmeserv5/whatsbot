@@ -8,8 +8,14 @@ import axios from "axios";
 import nodemailer from "nodemailer";
 
 export class FlowExecutor {
-  private executionRepo = AppDataSource.getRepository(FlowExecution);
-  private contactRepo = AppDataSource.getRepository(Contact);
+  private get executionRepo() {
+    return AppDataSource.getRepository(FlowExecution);
+  }
+
+  private get contactRepo() {
+    return AppDataSource.getRepository(Contact);
+  }
+
   private whatsappManager: WhatsAppManager;
   private emailTransporter: nodemailer.Transporter | null = null;
 

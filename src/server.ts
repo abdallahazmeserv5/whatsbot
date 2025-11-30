@@ -7,12 +7,15 @@ import { Flow } from "./entities/Flow";
 import { FlowExecution } from "./entities/FlowExecution";
 import qrcode from "qrcode-terminal";
 import "reflect-metadata";
+import { BulkMessageService } from "./services/BulkMessageService";
+import { BroadcastService } from "./services/BroadcastService";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" })); // Increased limit for bulk messaging
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // In-memory storage
 const qrCodes = new Map<string, string>();
@@ -23,7 +26,9 @@ AppDataSource.initialize()
   .then(() => {
     console.log("Database initialized successfully");
 
-    // Initialize BullMQ Worker
+    // Initialize BullMQ Worker (DISABLED - Redis not required for bulk/broadcast)
+    // Uncomment below if you need flow automation features
+    /*
     const manager = new WhatsAppManager();
     const flowExecutor = manager["flowExecutor"];
 
@@ -33,6 +38,7 @@ AppDataSource.initialize()
       });
       console.log("BullMQ worker started successfully");
     }
+    */
   })
   .catch((error) => {
     console.error("Error initializing database:", error);
@@ -40,6 +46,10 @@ AppDataSource.initialize()
 
 // Initialize the WhatsApp Manager
 const manager = new WhatsAppManager();
+
+// Initialize services
+const bulkMessageService = new BulkMessageService(manager);
+const broadcastService = new BroadcastService(manager);
 
 app.post("/session/start", async (req, res) => {
   const { sessionId } = req.body;
@@ -235,6 +245,122 @@ app.get("/flows/:id/executions", async (req, res) => {
     });
     res.json(executions);
   } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// BULK MESSAGING ENDPOINTS
+// ============================================
+
+app.post("/whatsapp/bulk-send", async (req, res) => {
+  try {
+    const { sessionId, numbers, message } = req.body;
+
+    if (!sessionId || !numbers || !message) {
+      return res.status(400).json({
+        error: "sessionId, numbers, and message are required",
+      });
+    }
+
+    if (!Array.isArray(numbers)) {
+      return res.status(400).json({ error: "numbers must be an array" });
+    }
+
+    const result = await bulkMessageService.sendBulkMessages({
+      sessionId,
+      numbers,
+      message,
+    });
+
+    res.json(result);
+  } catch (error: any) {
+    console.error("Bulk send error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// BROADCAST LIST ENDPOINTS
+// ============================================
+
+app.post("/whatsapp/broadcast/create", async (req, res) => {
+  try {
+    const { sessionId, name, numbers } = req.body;
+
+    if (!sessionId || !name || !numbers) {
+      return res.status(400).json({
+        error: "sessionId, name, and numbers are required",
+      });
+    }
+
+    if (!Array.isArray(numbers)) {
+      return res.status(400).json({ error: "numbers must be an array" });
+    }
+
+    const result = await broadcastService.createBroadcastList({
+      sessionId,
+      name,
+      numbers,
+    });
+
+    res.json(result);
+  } catch (error: any) {
+    console.error("Broadcast create error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/whatsapp/broadcast", async (req, res) => {
+  try {
+    const broadcasts = await broadcastService.getAllBroadcastLists();
+    res.json({ broadcasts });
+  } catch (error: any) {
+    console.error("Get broadcasts error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/whatsapp/broadcast/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const broadcast = await broadcastService.getBroadcastListById(id);
+
+    if (!broadcast) {
+      return res.status(404).json({ error: "Broadcast list not found" });
+    }
+
+    res.json(broadcast);
+  } catch (error: any) {
+    console.error("Get broadcast error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/whatsapp/broadcast/:id/send", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: "message is required" });
+    }
+
+    const result = await broadcastService.sendToBroadcastList(id, { message });
+    res.json(result);
+  } catch (error: any) {
+    console.error("Broadcast send error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/whatsapp/broadcast/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await broadcastService.deleteBroadcastList(id);
+    res.json({ success: true, message: "Broadcast list deleted" });
+  } catch (error: any) {
+    console.error("Delete broadcast error:", error);
     res.status(500).json({ error: error.message });
   }
 });
