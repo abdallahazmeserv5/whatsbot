@@ -201,11 +201,15 @@ export class FlowExecutor {
 
     const nextNodeId = this.getNextNodeId(execution.flow, node.id);
     if (nextNodeId) {
-      await flowQueue.add(
-        "execute-node",
-        { executionId: execution.id, nodeId: nextNodeId },
-        { delay: delaySeconds * 1000 }
-      );
+      if (flowQueue) {
+        await flowQueue.add(
+          "execute-node",
+          { executionId: execution.id, nodeId: nextNodeId },
+          { delay: delaySeconds * 1000 }
+        );
+      } else {
+        console.log("Queue disabled, skipping delayed node scheduling.");
+      }
 
       execution.currentNodeId = nextNodeId;
       await this.executionRepo.save(execution);

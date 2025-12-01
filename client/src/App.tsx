@@ -6,6 +6,7 @@ import BulkMessagePage from "./pages/BulkMessagePage";
 import BroadcastManager from "./pages/BroadcastManager";
 import SenderManager from "./pages/SenderManager";
 import CampaignManager from "./pages/CampaignManager";
+import AutoReplyPage from "./pages/AutoReplyPage";
 
 function App() {
   const [currentView, setCurrentView] = useState<
@@ -16,6 +17,7 @@ function App() {
     | "broadcast"
     | "senders"
     | "campaigns"
+    | "autoreply"
   >("dashboard");
 
   return (
@@ -135,6 +137,21 @@ function App() {
           >
             Campaigns
           </button>
+          <button
+            onClick={() => setCurrentView("autoreply")}
+            style={{
+              padding: "8px 16px",
+              background:
+                currentView === "autoreply" ? "#007bff" : "transparent",
+              color: "white",
+              border: currentView === "autoreply" ? "none" : "1px solid white",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            Auto Reply
+          </button>
         </nav>
       </header>
 
@@ -146,6 +163,7 @@ function App() {
         {currentView === "broadcast" && <BroadcastManager />}
         {currentView === "senders" && <SenderManager />}
         {currentView === "campaigns" && <CampaignManager />}
+        {currentView === "autoreply" && <AutoReplyPage />}
       </main>
     </div>
   );

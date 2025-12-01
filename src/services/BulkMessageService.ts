@@ -52,13 +52,15 @@ export class BulkMessageService {
           const jid = normalizePhoneNumber(number);
 
           // Retry logic with exponential backoff
-          await retryWithBackoff(
-            async () => {
-              await client.sendMessage(jid, messageText);
-            },
-            3, // 3 retries
-            1000 // 1 second initial delay
-          );
+          // await retryWithBackoff(
+          //   async () => {
+          //     await client.sendMessage(jid, messageText);
+          //   },
+          //   1, // 3 retries
+          //   300 // 1 second initial delay
+          // );
+
+          await client.sendMessage(jid, messageText);
 
           completedCount++;
           if (completedCount % 50 === 0 || completedCount === total) {

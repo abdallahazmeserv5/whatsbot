@@ -17,7 +17,7 @@ export default function BulkMessagePage() {
     failed: number;
     total: number;
   } | null>(null);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState(null);
 
   // Batch Mode State
   const [batchMode, setBatchMode] = useState(false);

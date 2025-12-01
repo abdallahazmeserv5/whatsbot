@@ -9,20 +9,15 @@ export class CampaignManager {
   private campaignRepo: Repository<Campaign>;
   private contactRepo: Repository<CampaignContact>;
   private blocklistRepo: Repository<Blocklist>;
-  private messageQueue: Queue;
+  private messageQueue: Queue | null = null;
 
   constructor() {
     this.campaignRepo = AppDataSource.getRepository(Campaign);
     this.contactRepo = AppDataSource.getRepository(CampaignContact);
     this.blocklistRepo = AppDataSource.getRepository(Blocklist);
 
-    // Initialize BullMQ queue
-    this.messageQueue = new Queue("message-queue", {
-      connection: {
-        host: process.env.REDIS_HOST || "localhost",
-        port: parseInt(process.env.REDIS_PORT || "6379"),
-      },
-    });
+    // BullMQ queue is optional - only initialize if Redis is available
+    // Will be initialized on first use in startCampaign()
   }
 
   /**
@@ -104,6 +99,22 @@ export class CampaignManager {
    * Start campaign - queue all messages
    */
   async startCampaign(campaignId: string): Promise<void> {
+    // Initialize queue if not already done
+    if (!this.messageQueue) {
+      try {
+        this.messageQueue = new Queue("message-queue", {
+          connection: {
+            host: process.env.REDIS_HOST || "localhost",
+            port: parseInt(process.env.REDIS_PORT || "6379"),
+          },
+        });
+      } catch (error) {
+        throw new Error(
+          "Redis is required for campaigns. Please install and start Redis, or use the Auto Reply feature instead."
+        );
+      }
+    }
+
     const campaign = await this.campaignRepo.findOne({
       where: { id: campaignId },
     });

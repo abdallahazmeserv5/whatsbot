@@ -84,8 +84,9 @@ export class WhatsAppClient {
     if (!this.socket) {
       throw new Error("Socket not initialized");
     }
-    // Ensure 'to' is in the correct format (e.g., 1234567890@s.whatsapp.net)
-    const jid = to.includes("@s.whatsapp.net") ? to : `${to}@s.whatsapp.net`;
+    // Fix: Only append domain if one doesn't exist.
+    // This prevents double domains like user@lid@s.whatsapp.net which causes "xml-not-well-formed" errors
+    const jid = to.includes("@") ? to : `${to}@s.whatsapp.net`;
     await this.socket.sendMessage(jid, { text });
   }
 

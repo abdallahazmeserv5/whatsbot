@@ -6,10 +6,16 @@ export class WhatsAppManager {
   private clients: Map<string, WhatsAppClient> = new Map();
   private sessionManager: SessionManager;
   private flowExecutor: FlowExecutor;
+  private autoReplyService?: any;
 
   constructor() {
     this.sessionManager = new SessionManager();
     this.flowExecutor = new FlowExecutor(this);
+  }
+
+  setAutoReplyService(service: any) {
+    this.autoReplyService = service;
+    console.log("✅ Auto-reply service connected to WhatsApp Manager");
   }
 
   async startSession(
@@ -35,6 +41,11 @@ export class WhatsAppManager {
 
         if (from && text) {
           this.flowExecutor.handleIncomingMessage(sessionId, from, text);
+
+          // Trigger auto-reply
+          if (this.autoReplyService) {
+            this.autoReplyService.handleIncomingMessage(sessionId, from, text);
+          }
         }
       }
     );

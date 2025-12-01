@@ -21,19 +21,22 @@ export class MessageLog {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
+  @Column({ nullable: true })
   campaignId!: string;
 
-  @ManyToOne(() => Campaign, { onDelete: "CASCADE" })
+  @ManyToOne(() => Campaign, { onDelete: "CASCADE", nullable: true })
   @JoinColumn({ name: "campaignId" })
   campaign!: Campaign;
 
-  @Column()
+  @Column({ nullable: true })
   contactId!: string;
 
-  @ManyToOne(() => CampaignContact, { onDelete: "CASCADE" })
+  @ManyToOne(() => CampaignContact, { onDelete: "CASCADE", nullable: true })
   @JoinColumn({ name: "contactId" })
   contact!: CampaignContact;
+
+  @Column({ nullable: true })
+  phoneNumber!: string;
 
   @Column()
   senderId!: string;

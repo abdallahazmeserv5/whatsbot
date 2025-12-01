@@ -7,9 +7,12 @@ export const createSenderRoutes = (senderManager: SenderManager) => {
   // Get all senders
   router.get("/", async (req, res) => {
     try {
+      console.log("GET /api/senders - Fetching all senders...");
       const senders = await senderManager.getAllSenders();
+      console.log("GET /api/senders - Found senders:", senders.length);
       res.json(senders);
     } catch (error: any) {
+      console.error("GET /api/senders - Error:", error);
       res.status(500).json({ error: error.message });
     }
   });

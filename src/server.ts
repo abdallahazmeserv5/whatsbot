@@ -11,16 +11,18 @@ import { BulkMessageService } from "./services/BulkMessageService";
 import { BroadcastService } from "./services/BroadcastService";
 import { SenderManager } from "./services/SenderManager";
 import { CampaignManager } from "./services/CampaignManager";
+import { AutoReplyService } from "./services/AutoReplyService";
 import { createSenderRoutes } from "./routes/senderRoutes";
 import { createCampaignRoutes } from "./routes/campaignRoutes";
+import { createAutoReplyRoutes } from "./routes/autoReplyRoutes";
 import { createMessageWorker } from "./workers/messageWorker";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json({ limit: "50mb" })); // Increased limit for bulk messaging
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use(express.json({ limit: "500mb" })); // Increased limit for bulk messaging
+app.use(express.urlencoded({ limit: "500mb", extended: true }));
 
 // In-memory storage
 const qrCodes = new Map<string, string>();
@@ -34,19 +36,27 @@ const bulkMessageService = new BulkMessageService(manager);
 const broadcastService = new BroadcastService(manager);
 const senderManager = new SenderManager(manager);
 const campaignManager = new CampaignManager();
+const autoReplyService = new AutoReplyService(manager);
 
 // Initialize Routes
 app.use("/api/senders", createSenderRoutes(senderManager));
 app.use("/api/campaigns", createCampaignRoutes(campaignManager));
+app.use("/api/auto-reply", createAutoReplyRoutes(autoReplyService));
 
 // Initialize Database
 AppDataSource.initialize()
   .then(async () => {
     console.log("Database initialized successfully");
 
+    // Connect auto-reply service to WhatsApp manager
+    manager.setAutoReplyService(autoReplyService);
+
     // Initialize Enterprise Features
     await senderManager.restoreAllSessions();
-    createMessageWorker(senderManager, campaignManager, manager);
+
+    // Message worker requires Redis - commented out for now
+    // createMessageWorker(senderManager, campaignManager, manager);
+
     console.log("✅ Enterprise WhatsApp System Initialized");
   })
   .catch((error) => {
@@ -259,9 +269,11 @@ app.post("/whatsapp/bulk-send", async (req, res) => {
   try {
     const { sessionId, numbers, message } = req.body;
 
-    if (!sessionId || !numbers || !message) {
+    // sessionId is now optional - if not provided, will use all connected sessions
+    if (!numbers || !message) {
       return res.status(400).json({
-        error: "sessionId, numbers, and message are required",
+        error:
+          "numbers and message are required. sessionId is optional (will use all sessions if not provided)",
       });
     }
 

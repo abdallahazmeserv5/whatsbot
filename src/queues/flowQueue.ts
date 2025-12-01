@@ -1,17 +1,31 @@
 import { Queue, Worker } from "bullmq";
 import Redis from "ioredis";
 
-const connection = new Redis({
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-  maxRetriesPerRequest: null,
-});
+const enableRedis = process.env.ENABLE_REDIS === "true";
 
-export const flowQueue = new Queue("flow-execution", { connection });
+// create the connection only if enabled
+const connection = enableRedis
+  ? new Redis({
+      host: process.env.REDIS_HOST || "localhost",
+      port: parseInt(process.env.REDIS_PORT || "6379"),
+      maxRetriesPerRequest: null,
+    })
+  : null;
 
+// ---- QUEUE ---- //
+export const flowQueue = enableRedis
+  ? new Queue("flow-execution", { connection: connection! })
+  : null;
+
+// ---- WORKER ---- //
 export function startFlowWorker(
   executeNodeCallback: (executionId: string, nodeId: string) => Promise<void>
 ) {
+  if (!enableRedis) {
+    console.log("Redis disabled — worker not started.");
+    return null;
+  }
+
   const worker = new Worker(
     "flow-execution",
     async (job) => {
@@ -21,7 +35,7 @@ export function startFlowWorker(
       );
       await executeNodeCallback(executionId, nodeId);
     },
-    { connection }
+    { connection: connection! }
   );
 
   worker.on("completed", (job) => {

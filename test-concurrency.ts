@@ -18,6 +18,11 @@ async function startSession(sessionId: string) {
 
 async function sendMessage(sessionId: string, to: string, text: string) {
   try {
+    console.log(`\n🔍 WhatsAppClient.sendMessage called`);
+    console.log(`   To: ${to}`);
+    console.log(`   Text: ${text}`);
+    console.log(`   Has sock: ${!!this.sock}`);
+    console.log(`   Sock user: ${this.sock?.user ? "YES" : "NO"}`);
     const response = await axios.post(`${SERVER_URL}/message/send`, {
       sessionId,
       to,
