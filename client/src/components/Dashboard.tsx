@@ -83,7 +83,11 @@ export const Dashboard: React.FC = () => {
 
     setSending(true);
     setStatus(null);
-
+    console.log("🚀 Sending message:", {
+      sessionId: selectedSession,
+      to,
+      text: message,
+    });
     try {
       await axios.post("http://localhost:3000/message/send", {
         sessionId: selectedSession,
