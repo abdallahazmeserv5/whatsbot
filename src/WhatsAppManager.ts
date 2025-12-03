@@ -53,6 +53,10 @@ export class WhatsAppManager {
     this.clients.set(sessionId, client);
   }
 
+  getClient(sessionId: string): WhatsAppClient | undefined {
+    return this.clients.get(sessionId);
+  }
+
   async sendMessage(sessionId: string, to: string, text: string) {
     const client = this.clients.get(sessionId);
     if (!client) {

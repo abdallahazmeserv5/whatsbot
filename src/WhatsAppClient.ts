@@ -90,6 +90,10 @@ export class WhatsAppClient {
     await this.socket.sendMessage(jid, { text });
   }
 
+  getSocket(): WASocket | null {
+    return this.socket;
+  }
+
   async destroy() {
     if (this.socket) {
       await this.socket.logout();

@@ -12,6 +12,7 @@ import { AutoReplyService } from './services/AutoReplyService'
 import { createSenderRoutes } from './routes/senderRoutes'
 import { createCampaignRoutes } from './routes/campaignRoutes'
 import { createAutoReplyRoutes } from './routes/autoReplyRoutes'
+import { createMessageWorker } from './workers/messageWorker'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -56,8 +57,14 @@ connectToDatabase()
     // Initialize Enterprise Features
     await senderManager.restoreAllSessions()
 
-    // Message worker requires Redis - commented out for now
-    // createMessageWorker(senderManager, campaignManager, manager);
+    // Initialize message worker (requires Redis)
+    try {
+      createMessageWorker(senderManager, campaignManager, manager)
+      console.log('✅ Message worker initialized')
+    } catch (error: any) {
+      console.warn('⚠️  Message worker not initialized (Redis may not be available):', error.message)
+      console.warn('   Campaigns will queue jobs but they won\'t be processed without Redis')
+    }
 
     console.log('✅ Enterprise WhatsApp System Initialized')
   })
