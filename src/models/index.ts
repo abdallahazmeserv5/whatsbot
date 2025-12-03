@@ -1,0 +1,12 @@
+// Export all models from a single entry point
+export { Sender, ISender } from './Sender'
+export { Campaign, ICampaign } from './Campaign'
+export { CampaignContact, ICampaignContact } from './CampaignContact'
+export { MessageLog, IMessageLog } from './MessageLog'
+export { Contact, IContact } from './Contact'
+export { Flow, IFlow } from './Flow'
+export { FlowExecution, IFlowExecution } from './FlowExecution'
+export { BroadcastList, IBroadcastList } from './BroadcastList'
+export { BroadcastGroup, IBroadcastGroup } from './BroadcastGroup'
+export { AutoReplyConfig, IAutoReplyConfig } from './AutoReplyConfig'
+export { Blocklist, IBlocklist } from './Blocklist'

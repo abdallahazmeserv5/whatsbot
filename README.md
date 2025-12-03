@@ -1,150 +1,219 @@
-# WhatsApp Automation System
+# WhatsApp Service
 
-A visual flow builder for creating WhatsApp automation workflows with support for conditions, delays, HTTP requests, and email integrations.
+Express-based WhatsApp service using Baileys for multi-session WhatsApp messaging.
+
+## Overview
+
+This service handles all WhatsApp operations for the Rayan Restaurant system. It runs independently from the main Next.js dashboard and provides REST API endpoints for WhatsApp functionality.
 
 ## Features
 
-- 🎨 **Visual Flow Builder** - Drag-and-drop interface using React Flow
-- 💬 **WhatsApp Integration** - Multi-session support with Baileys
-- 🔀 **Conditional Logic** - Branch flows based on message content
-- ⏱️ **Delays** - Schedule actions with BullMQ
-- 🌐 **HTTP Requests** - Call external APIs
-- 📧 **Email** - Send emails via SMTP
-- 💾 **Database** - SQLite with TypeORM
-- 🔄 **Variables** - Dynamic content with `{{contact.name}}`, `{{flow.data}}`
+- Multi-session WhatsApp support
+- QR code generation for session authentication
+- Message sending (single and bulk)
+- Broadcast lists
+- Campaign management
+- Auto-reply functionality
+- Flow automation
+- Session persistence with TypeORM
 
 ## Prerequisites
 
-- Node.js 16+
-- Redis (for DelayNode)
-- SMTP credentials (for EmailNode)
+- Node.js 18+ or 20+
+- PostgreSQL or SQLite database
+- Redis (optional, for BullMQ message queuing)
 
 ## Installation
 
 ```bash
-# Install dependencies
 npm install
-cd client && npm install && cd ..
-
-# Setup environment
-cp .env.example .env
-# Edit .env with your credentials
 ```
 
 ## Configuration
 
-Edit `.env`:
-
-```env
-# Redis (required for delays)
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# SMTP (required for emails)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-
-PORT=3000
-```
-
-## Running
+1. Copy `.env.example` to `.env`:
 
 ```bash
-# Start Redis
-redis-server
-
-# Start backend
-npm run dev
-
-# Start frontend (new terminal)
-cd client && npm run dev
+cp .env.example .env
 ```
 
-Open `http://localhost:5173`
+2. Update the environment variables:
+   - `PORT`: Server port (default: 3001)
+   - `ALLOWED_ORIGINS`: Comma-separated list of allowed CORS origins
+   - Database connection settings
+   - Redis connection settings (if using)
 
-## Usage
+## Running the Service
 
-### 1. Create WhatsApp Session
+### Development
 
-- Click "Add Session"
-- Scan QR code with WhatsApp
-- Wait for "Connected" status
+```bash
+npm run dev
+```
 
-### 2. Build a Flow
+### Production
 
-- Go to "Flow Builder"
-- Drag nodes from sidebar
-- Connect nodes
-- Save flow
+```bash
+npm start
+```
 
-### 3. Trigger Flow
+The service will start on `http://localhost:3001` (or your configured PORT).
 
-Send a message containing the keyword (default: "hello" or "hi")
+## API Endpoints
 
-## Node Types
+### Session Management
 
-| Node             | Description                     |
-| ---------------- | ------------------------------- |
-| **Start**        | Entry point for flows           |
-| **Message**      | Send WhatsApp message           |
-| **Condition**    | Branch based on message content |
-| **Delay**        | Wait before continuing          |
-| **HTTP Request** | Call external APIs              |
-| **Email**        | Send emails                     |
+#### Start a Session
 
-## Variables
+```
+POST /session/start
+Body: { "sessionId": "string" }
+```
 
-Use variables in any text field:
+#### Get QR Code
 
-- `{{contact.name}}` - Contact name
-- `{{contact.phoneNumber}}` - Phone number
-- `{{flow.httpResponse}}` - HTTP response data
-- `{{flow.message}}` - Incoming message
+```
+GET /session/:sessionId/qr
+```
 
-## Troubleshooting
+#### Get Session Status
 
-**DelayNode not working**
+```
+GET /session/:sessionId/status
+```
 
-- Ensure Redis is running: `redis-server`
+#### Get All Sessions
 
-**EmailNode not working**
+```
+GET /sessions
+```
 
-- Check SMTP credentials in `.env`
-- For Gmail, use App Password: https://myaccount.google.com/apppasswords
+#### Delete Session
 
-**Flow not triggering**
+```
+DELETE /session/:sessionId
+```
 
-- Verify flow is active
-- Check keywords match
-- View server logs for errors
+### Messaging
+
+#### Send Message
+
+```
+POST /message/send
+Body: { "sessionId": "string", "to": "string", "text": "string" }
+```
+
+#### Send Bulk Messages
+
+```
+POST /message/send-bulk
+Body: { "sessionId": "string", "recipients": ["string"], "text": "string", "delayMs": number }
+```
+
+#### Broadcast to All Sessions
+
+```
+POST /message/send-all
+Body: { "recipients": ["string"], "text": "string", "delayMs": number }
+```
+
+### Advanced Features
+
+#### Bulk Messaging (with batching)
+
+```
+POST /whatsapp/bulk-send
+Body: { "sessionId": "string", "numbers": ["string"], "message": "string" }
+```
+
+#### Broadcast Lists
+
+```
+POST /whatsapp/broadcast/create
+GET /whatsapp/broadcast
+GET /whatsapp/broadcast/:id
+POST /whatsapp/broadcast/:id/send
+DELETE /whatsapp/broadcast/:id
+```
+
+#### Campaigns
+
+```
+See /api/campaigns/* endpoints
+```
+
+#### Auto-Reply
+
+```
+See /api/auto-reply/* endpoints
+```
+
+#### Senders
+
+```
+See /api/senders/* endpoints
+```
+
+## Integration with Next.js Dashboard
+
+The Next.js dashboard communicates with this service via HTTP requests. Make sure:
+
+1. This service is running on port 3001
+2. Next.js app has `WHATSAPP_SERVICE_URL=http://localhost:3001` in its `.env`
+3. CORS is properly configured to allow requests from the Next.js app
 
 ## Architecture
 
 ```
-Client (React + React Flow)
-  ↓
-Server (Express + TypeORM)
-  ↓
-WhatsApp (Baileys) + BullMQ (Redis)
-  ↓
-SQLite Database
+┌─────────────────────────┐
+│   Next.js Dashboard     │
+│   (Port 3000)           │
+│   - Payload CMS         │
+│   - UI/Admin            │
+└───────────┬─────────────┘
+            │ HTTP API
+            ▼
+┌─────────────────────────┐
+│  Express WhatsApp       │
+│  Service (Port 3001)    │
+│  - Baileys Integration  │
+│  - Session Management   │
+│  - Message Sending      │
+└─────────────────────────┘
 ```
 
-## Development
+## Database Schema
 
-```bash
-# Backend
-npm run dev
+The service uses TypeORM with the following entities:
 
-# Frontend
-cd client && npm run dev
+- Flow
+- FlowExecution
+- Contact
+- BroadcastList
+- Campaign
+- Sender
+- AutoReply
+- And more...
 
-# Build
-npm run build (backend - TypeScript)
-cd client && npm run build
-```
+## Troubleshooting
+
+### QR Code Not Generating
+
+- Ensure the session directory has write permissions
+- Check that Baileys is properly installed
+- Verify no firewall is blocking the connection
+
+### Messages Not Sending
+
+- Verify the session is connected (status: 'open')
+- Check phone number format (should include country code)
+- Ensure WhatsApp Web is not logged in on another device
+
+### CORS Errors
+
+- Verify `ALLOWED_ORIGINS` includes your Next.js app URL
+- Check that both services are running
+- Ensure the Next.js app is using the correct `WHATSAPP_SERVICE_URL`
 
 ## License
 
