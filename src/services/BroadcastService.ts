@@ -61,7 +61,7 @@ export class BroadcastService {
 
         groupInfos.push({
           id: broadcastGroup.id,
-          broadcastJid: broadcastGroup.broadcastJid,
+          broadcastJid: broadcastGroup.broadcastJid || `broadcast_${broadcastList.id}_${i}`,
           members: chunk,
           memberCount: chunk.length,
         })

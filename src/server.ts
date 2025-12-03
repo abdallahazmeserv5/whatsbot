@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import { WhatsAppManager } from './WhatsAppManager'
@@ -62,8 +63,11 @@ connectToDatabase()
       createMessageWorker(senderManager, campaignManager, manager)
       console.log('✅ Message worker initialized')
     } catch (error: any) {
-      console.warn('⚠️  Message worker not initialized (Redis may not be available):', error.message)
-      console.warn('   Campaigns will queue jobs but they won\'t be processed without Redis')
+      console.warn(
+        '⚠️  Message worker not initialized (Redis may not be available):',
+        error.message,
+      )
+      console.warn("   Campaigns will queue jobs but they won't be processed without Redis")
     }
 
     console.log('✅ Enterprise WhatsApp System Initialized')
@@ -79,6 +83,9 @@ app.post('/session/start', async (req, res) => {
   }
 
   try {
+    // Set initial status
+    sessionStatuses.set(sessionId, 'connecting')
+
     await manager.startSession(
       sessionId,
       (qr) => {
@@ -113,7 +120,23 @@ app.get('/session/:sessionId/qr', (req, res) => {
 
 app.get('/session/:sessionId/status', (req, res) => {
   const { sessionId } = req.params
-  const status = sessionStatuses.get(sessionId) || 'unknown'
+
+  // First check if we have a client for this session
+  const client = manager.getClient(sessionId)
+  if (client) {
+    const socket = client.getSocket()
+    if (socket) {
+      // Check if socket is actually connected
+      const isConnected = socket.user && socket.user.id
+      if (isConnected) {
+        sessionStatuses.set(sessionId, 'connected')
+        return res.json({ status: 'connected' })
+      }
+    }
+  }
+
+  // Fall back to stored status
+  const status = sessionStatuses.get(sessionId) || 'disconnected'
   res.json({ status })
 })
 

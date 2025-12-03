@@ -13,7 +13,7 @@ const AutoReplyConfigSchema = new Schema<IAutoReplyConfig>(
   {
     isActive: { type: Boolean, default: false },
     senderNumber: { type: String, default: '' },
-    messageContent: { type: String, required: true },
+    messageContent: { type: String, default: 'Thank you for contacting us!' },
   },
   {
     timestamps: true,

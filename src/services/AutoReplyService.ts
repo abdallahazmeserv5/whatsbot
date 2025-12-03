@@ -67,7 +67,7 @@ export class AutoReplyService {
 
       console.log(`📤 Sending auto-reply via HTTP from ${sessionToUse} to ${to}`)
 
-      await axios.post('http://localhost:3000/message/send', {
+      await axios.post('http://localhost:3001/message/send', {
         sessionId: sessionToUse,
         to: to,
         text: messageText,
